@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -13,6 +12,7 @@ class DatabaseSeeder extends Seeder
             PositiveWordSeeder::class,
             NegativeWordSeeder::class,
             CountrySeeder::class,
+            PortSeeder::class,
         ]);
     }
 }

@@ -13,7 +13,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Total Users</h6>
-                    <h3>0</h3>
+                    <h3>{{ $totalUsers }}</h3>
                     <small>Data pengguna sistem</small>
                 </div>
             </div>
@@ -23,7 +23,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Total Countries</h6>
-                    <h3>0</h3>
+                    <h3>{{ $totalCountries }}</h3>
                     <small>Negara yang dimonitor</small>
                 </div>
             </div>
@@ -33,7 +33,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Total Ports</h6>
-                    <h3>0</h3>
+                    <h3>{{ $totalPorts }}</h3>
                     <small>Dataset pelabuhan</small>
                 </div>
             </div>
@@ -43,7 +43,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Risk Reports</h6>
-                    <h3>0</h3>
+                    <h3>{{ $totalRiskReports }}</h3>
                     <small>Hasil analisis risiko</small>
                 </div>
             </div>

@@ -57,17 +57,17 @@
             <a href="{{ route('dashboard') }}">Dashboard</a>
             <a href="{{ route('country.dashboard') }}">Country Dashboard</a>
             <a href="{{ route('countries.index') }}">Countries</a>
-            <a href="#">Risk Score</a>
-            <a href="#">Weather Map</a>
-            <a href="#">Currency</a>
-            <a href="#">News Intelligence</a>
-            <a href="#">Ports</a>
-            <a href="#">Compare Countries</a>
-            <a href="#">Watchlist</a>
+            <a href="{{ route('risk.index') }}">Risk Score</a>
+            <a href="{{ route('weather.map') }}">Weather Map</a>
+            <a href="{{ route('currency.index') }}">Currency</a>
+            <a href="{{ route('news.index') }}">News Intelligence</a>
+            <a href="{{ route('ports.index') }}">Ports</a>
+            <a href="{{ route('comparison.index') }}">Compare Countries</a>
+            <a href="{{ route('watchlists.index') }}">Watchlist</a>
 
             @if(auth()->user()->role === 'admin')
                 <hr class="text-white">
-                <a href="#">Admin Users</a>
+                <a href="{{ route('admin.users.index') }}">Admin Users</a>
                 <a href="#">Manage Ports</a>
                 <a href="#">Articles</a>
                 <a href="#">Sentiment Words</a>

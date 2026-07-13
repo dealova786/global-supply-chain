@@ -13,7 +13,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Monitored Countries</h6>
-                    <h3>0</h3>
+                    <h3>{{ $totalWatchlists }}</h3>
                     <small>Negara dalam watchlist</small>
                 </div>
             </div>
@@ -23,7 +23,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Highest Risk</h6>
-                    <h3>-</h3>
+                    <h3>{{ $latestRisk?->total_score ?? '-' }}</h3>
                     <small>Negara dengan risiko tertinggi</small>
                 </div>
             </div>
@@ -33,7 +33,7 @@
             <div class="card card-stat shadow-sm">
                 <div class="card-body">
                     <h6>Latest News</h6>
-                    <h3>0</h3>
+                    <h3>{{ $latestNews }}</h3>
                     <small>Berita ekonomi dan logistik</small>
                 </div>
             </div>

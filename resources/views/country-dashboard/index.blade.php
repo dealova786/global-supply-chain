@@ -1,3 +1,7 @@
+@php
+    use Illuminate\Support\Str;
+@endphp
+
 @extends('layouts.dashboard')
 
 @section('content')
@@ -35,37 +39,37 @@
         </div>
     </div>
 
-    @if($selectedCountry)
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Country</h6>
-                        <h4>{{ $selectedCountry->name }}</h4>
-                        <small>{{ $selectedCountry->official_name }}</small>
-                    </div>
+@if($selectedCountry)
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Country</h6>
+                    <h4>{{ $selectedCountry->name }}</h4>
+                    <small>{{ $selectedCountry->official_name }}</small>
                 </div>
             </div>
+        </div>
 
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Capital</h6>
-                        <h4>{{ $selectedCountry->capital }}</h4>
-                        <small>{{ $selectedCountry->region }}</small>
-                    </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Capital</h6>
+                    <h4>{{ $selectedCountry->capital }}</h4>
+                    <small>{{ $selectedCountry->region }}</small>
                 </div>
             </div>
+        </div>
 
-            <div class="col-md-3">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Currency</h6>
-                        <h4>{{ $selectedCountry->currency_code }}</h4>
-                        <small>{{ $selectedCountry->currency_name }}</small>
-                    </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Currency</h6>
+                    <h4>{{ $selectedCountry->currency_code }}</h4>
+                    <small>{{ $selectedCountry->currency_name }}</small>
                 </div>
             </div>
+        </div>
 
             <div class="col-md-3">
                 <div class="card shadow-sm border-0">
@@ -124,6 +128,226 @@
     </div>
 @endif
         
+        @if($economicData)
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>GDP</h6>
+                    <h4>$ {{ number_format($economicData['gdp'] ?? 0, 0) }}</h4>
+                    <small>Current US$ - Year {{ $economicData['year'] ?? '-' }}</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Inflation</h6>
+                    <h4>{{ number_format($economicData['inflation'] ?? 0, 2) }}%</h4>
+                    <small>Consumer prices annual %</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Population</h6>
+                    <h4>{{ number_format($economicData['population'] ?? 0) }}</h4>
+                    <small>World Bank population data</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Exports</h6>
+                    <h4>$ {{ number_format($economicData['exports'] ?? 0, 0) }}</h4>
+                    <small>Goods and services, current US$</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Imports</h6>
+                    <h4>$ {{ number_format($economicData['imports'] ?? 0, 0) }}</h4>
+                    <small>Goods and services, current US$</small>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if($currencyData)
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Exchange Rate</h6>
+                    <h4>
+                        1 {{ $currencyData['base_currency'] }} =
+                        {{ number_format($currencyData['exchange_rate'], 6) }}
+                        {{ $currencyData['target_currency'] }}
+                    </h4>
+                    <small>Latest currency rate</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Currency Risk</h6>
+                    <h4>{{ $currencyData['currency_risk'] }}</h4>
+                    <small>Risk based on exchange rate movement</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <h6>Rate Date</h6>
+                    <h4>{{ $currencyData['rate_date'] }}</h4>
+                    <small>Stored exchange rate date</small>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if($riskData)
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="mb-1">Supply Chain Risk Score</h5>
+                    <p class="text-muted mb-0">
+                        Perhitungan risiko berdasarkan cuaca, inflasi, kurs mata uang, dan sentimen berita.
+                    </p>
+                </div>
+
+                <div class="text-end">
+                    @if($riskData['risk_level'] === 'Low')
+                        <span class="badge bg-success fs-6">Low Risk</span>
+                    @elseif($riskData['risk_level'] === 'Medium')
+                        <span class="badge bg-warning text-dark fs-6">Medium Risk</span>
+                    @else
+                        <span class="badge bg-danger fs-6">High Risk</span>
+                    @endif
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3 border rounded">
+                        <h6>Total Risk Score</h6>
+                        <h2>{{ $riskData['total_score'] }}</h2>
+                        <small>Risk Level: {{ $riskData['risk_level'] }}</small>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <table class="table table-bordered mb-0">
+                        <tr>
+                            <th>Weather Risk</th>
+                            <td>{{ $riskData['weather_risk'] }}</td>
+                            <td>Weight 30%</td>
+                        </tr>
+                        <tr>
+                            <th>Inflation Risk</th>
+                            <td>{{ $riskData['inflation_risk'] }}</td>
+                            <td>Weight 20%</td>
+                        </tr>
+                        <tr>
+                            <th>News Risk</th>
+                            <td>{{ $riskData['news_risk'] }}</td>
+                            <td>Weight 40%</td>
+                        </tr>
+                        <tr>
+                            <th>Currency Risk</th>
+                            <td>{{ $riskData['currency_risk'] }}</td>
+                            <td>Weight 10%</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
+
+@if(!empty($newsData))
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <h5 class="mb-3">News Intelligence</h5>
+            <p class="text-muted">
+                Berita terkait logistik, perdagangan, ekonomi, shipping, geopolitik, dan supply chain.
+            </p>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>No</th>
+                            <th>Title</th>
+                            <th>Source</th>
+                            <th>Sentiment</th>
+                            <th>Scores</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($newsData as $news)
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+                                <td>
+                                    <strong>{{ $news['title'] }}</strong><br>
+                                    <small class="text-muted">
+                                        {{ Str::limit($news['description'] ?? '-', 100) }}
+                                    </small>
+                                </td>
+                                <td>{{ $news['source'] ?? '-' }}</td>
+                                <td>
+                                    @if($news['sentiment'] === 'Positive')
+                                        <span class="badge bg-success">Positive</span>
+                                    @elseif($news['sentiment'] === 'Negative')
+                                        <span class="badge bg-danger">Negative</span>
+                                    @else
+                                        <span class="badge bg-secondary">Neutral</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <small>
+                                        + {{ $news['positive_score'] }} |
+                                        - {{ $news['negative_score'] }} |
+                                        Neutral {{ $news['neutral_score'] }}
+                                    </small>
+                                </td>
+                                <td>
+                                    @if($news['url'])
+                                        <a href="{{ $news['url'] }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                            Open
+                                        </a>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+@endif
+
         <div class="row g-3">
             <div class="col-md-5">
                 <div class="card shadow-sm border-0">
