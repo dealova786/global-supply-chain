@@ -12,8 +12,13 @@ class RiskScoreService
         ?array $weatherData,
         ?array $economicData,
         ?array $currencyData,
-        array $newsData = []
+        $newsData = []
     ): array {
+        
+        if ($newsData instanceof \Illuminate\Support\Collection) {
+            $newsData = $newsData->toArray();
+        }
+
         $weatherRisk = $weatherData['weather_risk'] ?? 20;
 
         $inflationRisk = $this->calculateInflationRisk(

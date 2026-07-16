@@ -12,6 +12,8 @@ use App\Http\Controllers\PortController;
 use App\Http\Controllers\ComparisonController;
 use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
+use App\Http\Controllers\Admin\SyncController as AdminSyncController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -76,6 +78,16 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::get('/users/{user}/edit', [AdminUserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [AdminUserController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy'])->name('users.destroy');
+
+    Route::get('/articles', [AdminArticleController::class, 'index'])->name('articles.index');
+    Route::get('/articles/create', [AdminArticleController::class, 'create'])->name('articles.create');
+    Route::post('/articles', [AdminArticleController::class, 'store'])->name('articles.store');
+    Route::get('/articles/{article}/edit', [AdminArticleController::class, 'edit'])->name('articles.edit');
+    Route::put('/articles/{article}', [AdminArticleController::class, 'update'])->name('articles.update');
+    Route::delete('/articles/{article}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
+
+    Route::get('/sync-center', [AdminSyncController::class, 'index'])->name('sync.index');
+Route::post('/sync/countries', [AdminSyncController::class, 'syncCountries'])->name('sync.countries');
 });
 
 });

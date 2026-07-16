@@ -28,10 +28,15 @@ class UserController extends Controller
             'role' => 'required|in:admin,user',
         ]);
 
+        $role = $request->role;
+        if ($user->id === auth()->id()) {
+            $role = 'admin';
+        }
+
         $user->update([
             'name' => $request->name,
             'email' => $request->email,
-            'role' => $request->role,
+            'role' => $role,
         ]);
 
         return redirect()

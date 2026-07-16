@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
 use App\Models\Country;
 use App\Models\NewsCache;
 use App\Models\Port;
@@ -17,12 +18,16 @@ class DashboardController extends Controller
             $totalUsers = User::count();
             $totalCountries = Country::count();
             $totalPorts = Port::count();
+            $totalArticles = Article::count();
+            $totalNews = NewsCache::count();
             $totalRiskReports = RiskScore::count();
 
             return view('dashboard.admin', compact(
                 'totalUsers',
                 'totalCountries',
                 'totalPorts',
+                'totalArticles',
+                'totalNews',
                 'totalRiskReports'
             ));
         }
