@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Country;
-use App\Models\NewsCache;
 use App\Services\NewsService;
 use Illuminate\Http\Request;
 
@@ -15,31 +14,43 @@ class NewsController extends Controller
 
         $selectedCountry = null;
         $newsData = collect();
+        $message = null;
 
         if ($request->filled('country_id')) {
             $selectedCountry = Country::find($request->country_id);
 
             if ($selectedCountry) {
-                $newsService->getNewsByCountry($selectedCountry);
+                $result = $newsService->getNewsByCountry($selectedCountry);
 
-                $newsData = NewsCache::where('country_id', $selectedCountry->id)
-                    ->orderBy('published_at', 'desc')
-                    ->limit(20)
-                    ->get();
+                $message = $result['message'] ?? null;
+
+                $newsData = collect($result['data'] ?? []);
             }
         }
 
-        $positiveCount = $newsData->where('sentiment', 'Positive')->count();
-        $neutralCount = $newsData->where('sentiment', 'Neutral')->count();
-        $negativeCount = $newsData->where('sentiment', 'Negative')->count();
+        $totalNews = $newsData->count();
+
+        $positiveNews = $newsData->filter(function ($news) {
+            return ($news['sentiment'] ?? $news->sentiment ?? null) === 'Positive';
+        })->count();
+
+        $neutralNews = $newsData->filter(function ($news) {
+            return ($news['sentiment'] ?? $news->sentiment ?? null) === 'Neutral';
+        })->count();
+
+        $negativeNews = $newsData->filter(function ($news) {
+            return ($news['sentiment'] ?? $news->sentiment ?? null) === 'Negative';
+        })->count();
 
         return view('news.index', compact(
             'countries',
             'selectedCountry',
             'newsData',
-            'positiveCount',
-            'neutralCount',
-            'negativeCount'
+            'totalNews',
+            'positiveNews',
+            'neutralNews',
+            'negativeNews',
+            'message'
         ));
     }
 }

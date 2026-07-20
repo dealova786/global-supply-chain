@@ -3,232 +3,394 @@
 namespace App\Services;
 
 use App\Models\Country;
+use App\Models\NegativeWord;
 use App\Models\NewsCache;
+use App\Models\PositiveWord;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 
 class NewsService
 {
-    protected SentimentService $sentimentService;
-
-    public function __construct(SentimentService $sentimentService)
-    {
-        $this->sentimentService = $sentimentService;
-    }
-
     public function getNewsByCountry(Country $country): array
     {
-        $apiKey = config('services.gnews.api_key');
-        $baseUrl = config('services.gnews.base_url', 'https://gnews.io/api/v4');
-
-        $recentCache = NewsCache::where('country_id', $country->id)
-            ->where('created_at', '>=', now()->subHours(2))
-            ->orderByDesc('published_at')
+        $cache = NewsCache::where('country_id', $country->id)
+            ->latest('published_at')
             ->limit(10)
             ->get();
 
-        if ($recentCache->isNotEmpty()) {
+        if ($cache->count() > 0) {
             return [
                 'success' => true,
+                'status' => true,
                 'source' => 'cache',
-                'message' => 'Menampilkan news cache terbaru.',
-                'data' => $recentCache,
+                'message' => 'News retrieved from cache.',
+                'data' => $cache,
             ];
         }
 
-        if (!$apiKey) {
-            return $this->getCachedNews(
-                $country,
-                'GNews API key belum tersedia. Menampilkan cache jika ada.'
-            );
-        }
+        $gnewsResult = $this->fetchFromGNews($country);
 
-        try {
-            $savedNews = collect();
-            $usedUrls = [];
-
-            if ($country->cca2) {
-                $this->fetchAndSaveArticles(
-                    country: $country,
-                    endpoint: $baseUrl . '/top-headlines',
-                    params: [
-                        'category' => 'business',
-                        'country' => strtolower($country->cca2),
-                        'lang' => 'en',
-                        'max' => 5,
-                        'apikey' => $apiKey,
-                    ],
-                    savedNews: $savedNews,
-                    usedUrls: $usedUrls
-                );
-            }
-
-            if ($savedNews->count() < 5) {
-                $queries = [
-                    '"' . $country->name . '" economy OR trade OR business',
-                    '"' . $country->name . '" logistics OR import OR export',
-                    '"' . $country->name . '" supply chain',
-                ];
-
-                if ($country->official_name && $country->official_name !== $country->name) {
-                    $queries[] = '"' . $country->official_name . '" economy OR trade';
-                }
-
-                if ($country->capital) {
-                    $queries[] = '"' . $country->capital . '" "' . $country->name . '" economy';
-                }
-
-                foreach ($queries as $query) {
-                    $this->fetchAndSaveArticles(
-                        country: $country,
-                        endpoint: $baseUrl . '/search',
-                        params: [
-                            'q' => Str::limit($query, 190, ''),
-                            'lang' => 'en',
-                            'max' => 5,
-                            'sortby' => 'publishedAt',
-                            'nullable' => 'description,content',
-                            'apikey' => $apiKey,
-                        ],
-                        savedNews: $savedNews,
-                        usedUrls: $usedUrls
-                    );
-
-                    if ($savedNews->count() >= 10) {
-                        break;
-                    }
-                }
-            }
-
-            if ($savedNews->isEmpty() && $country->region) {
-                $this->fetchAndSaveArticles(
-                    country: $country,
-                    endpoint: $baseUrl . '/search',
-                    params: [
-                        'q' => '"' . $country->region . '" global trade OR supply chain OR logistics',
-                        'lang' => 'en',
-                        'max' => 5,
-                        'sortby' => 'publishedAt',
-                        'nullable' => 'description,content',
-                        'apikey' => $apiKey,
-                    ],
-                    savedNews: $savedNews,
-                    usedUrls: $usedUrls
-                );
-            }
-
-            if ($savedNews->isEmpty()) {
-                return $this->getCachedNews(
-                    $country,
-                    'GNews API tidak mengembalikan artikel untuk negara ini. Menampilkan cache jika ada.'
-                );
-            }
-
+        if ($gnewsResult['status'] && $gnewsResult['data']->count() > 0) {
             return [
                 'success' => true,
-                'source' => 'api',
-                'message' => 'News data retrieved successfully.',
-                'data' => $savedNews,
+                'status' => true,
+                'source' => 'gnews',
+                'message' => $gnewsResult['message'],
+                'data' => $gnewsResult['data'],
             ];
-
-        } catch (\Throwable $e) {
-            return $this->getCachedNews(
-                $country,
-                'GNews API timeout atau gagal. Menampilkan cache terakhir jika tersedia.'
-            );
         }
+
+        return [
+            'success' => false,
+            'status' => false,
+            'source' => 'none',
+            'message' => $gnewsResult['message'],
+            'data' => collect(),
+        ];
     }
 
-    private function fetchAndSaveArticles(
-        Country $country,
-        string $endpoint,
-        array $params,
-        $savedNews,
-        array &$usedUrls
-    ): void {
+    public function getNews(Country $country): array
+    {
+        return $this->getNewsByCountry($country);
+    }
+
+    public function getCountryNews(Country $country): array
+    {
+        return $this->getNewsByCountry($country);
+    }
+
+    private function fetchFromGNews(Country $country): array
+    {
+        $apiKey = config('services.gnews.api_key');
+        $baseUrl = rtrim(config('services.gnews.base_url', 'https://gnews.io/api/v4'), '/');
+
+        if (!$apiKey) {
+            return [
+                'status' => false,
+                'message' => 'GNews API key belum diisi di file .env.',
+                'data' => collect(),
+            ];
+        }
+
         try {
+            $query = $country->name . ' economy trade logistics';
+
             $response = Http::connectTimeout(5)
                 ->timeout(10)
-                ->retry(1, 500)
-                ->get($endpoint, $params);
+                ->get($baseUrl . '/search', [
+                    'q' => $query,
+                    'lang' => 'en',
+                    'max' => 10,
+                    'apikey' => $apiKey,
+                ]);
+
+            if ($response->status() === 403) {
+                return [
+                    'status' => false,
+                    'message' => 'GNews API quota harian sudah habis. Tunggu reset besok jam 00:00 UTC atau gunakan API key baru.',
+                    'data' => collect(),
+                ];
+            }
+
+            if ($response->status() === 401) {
+                return [
+                    'status' => false,
+                    'message' => 'GNews API key tidak valid atau belum terbaca.',
+                    'data' => collect(),
+                ];
+            }
 
             if (!$response->successful()) {
-                return;
+                return [
+                    'status' => false,
+                    'message' => 'GNews API status: ' . $response->status(),
+                    'data' => collect(),
+                ];
             }
 
             $articles = $response->json('articles') ?? [];
 
-            foreach ($articles as $article) {
-                if ($savedNews->count() >= 10) {
-                    return;
-                }
+            $savedArticles = $this->saveArticles($country, $articles)
+                ->unique('url')
+                ->values();
 
-                $url = $article['url'] ?? null;
-
-                if (!$url || in_array($url, $usedUrls)) {
-                    continue;
-                }
-
-                $usedUrls[] = $url;
-
-                $title = $article['title'] ?? '-';
-                $description = $article['description'] ?? '';
-                $content = $article['content'] ?? '';
-                $source = $article['source']['name'] ?? '-';
-                $publishedAt = $article['publishedAt'] ?? null;
-
-                $textForAnalysis = trim($title . ' ' . $description . ' ' . $content);
-                $sentimentResult = $this->sentimentService->analyze($textForAnalysis);
-
-                $news = NewsCache::updateOrCreate(
-                    [
-                        'url' => $url,
-                    ],
-                    [
-                        'country_id' => $country->id,
-                        'title' => Str::limit($title, 250, ''),
-                        'description' => Str::limit($description, 250, ''),
-                        'content' => Str::limit($content, 1000, ''),
-                        'source' => Str::limit($source, 100, ''),
-                        'published_at' => $publishedAt ? Carbon::parse($publishedAt) : now(),
-                        'sentiment' => $sentimentResult['sentiment'],
-                        'positive_score' => $sentimentResult['positive_score'],
-                        'negative_score' => $sentimentResult['negative_score'],
-                        'neutral_score' => $sentimentResult['neutral_score'],
-                        'news_risk' => $sentimentResult['news_risk'],
-                    ]
-                );
-
-                $savedNews->push($news);
+            if ($savedArticles->count() === 0) {
+                return [
+                    'status' => false,
+                    'message' => 'GNews API tidak menemukan berita untuk negara ini.',
+                    'data' => collect(),
+                ];
             }
 
+            return [
+                'status' => true,
+                'message' => 'News data retrieved successfully from GNews API.',
+                'data' => $savedArticles,
+            ];
         } catch (\Throwable $e) {
-            return;
+            return [
+                'status' => false,
+                'message' => 'GNews API gagal: ' . $e->getMessage(),
+                'data' => collect(),
+            ];
         }
+    }
+
+    private function fetchFromGdelt(Country $country): array
+    {
+        try {
+            $savedArticles = collect();
+
+            $queries = array_filter([
+                '"' . $country->name . '" AND (economy OR trade OR logistics OR shipping OR supply chain OR import OR export OR port OR inflation)',
+                '"' . $country->name . '" AND (business OR market OR currency OR transportation OR disruption)',
+                $country->region ? '"' . $country->region . '" AND (trade OR logistics OR shipping OR economy OR supply chain)' : null,
+            ]);
+
+            foreach ($queries as $query) {
+                $response = Http::connectTimeout(5)
+                    ->timeout(10)
+                    ->get('https://api.gdeltproject.org/api/v2/doc/doc', [
+                        'query' => $query,
+                        'mode' => 'artlist',
+                        'maxrecords' => 10,
+                        'format' => 'json',
+                        'sort' => 'datedesc',
+                        'timespan' => '1y',
+                    ]);
+
+                if ($response->successful()) {
+                    $savedArticles = $savedArticles->merge(
+                        $this->saveGdeltArticles($country, $response->json('articles') ?? [])
+                    );
+                }
+
+                if ($savedArticles->count() >= 5) {
+                    break;
+                }
+            }
+
+            $savedArticles = $savedArticles->unique('url')->values();
+
+            if ($savedArticles->count() === 0) {
+                return [
+                    'status' => false,
+                    'message' => 'GDELT API tidak menemukan berita.',
+                    'data' => collect(),
+                ];
+            }
+
+            return [
+                'status' => true,
+                'message' => 'News data retrieved successfully from GDELT API backup.',
+                'data' => $savedArticles,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'status' => false,
+                'message' => 'GDELT API gagal: ' . $e->getMessage(),
+                'data' => collect(),
+            ];
+        }
+    }
+
+    private function saveArticles(Country $country, array $articles): Collection
+    {
+        $savedArticles = collect();
+
+        foreach ($articles as $article) {
+            $title = $article['title'] ?? null;
+            $url = $article['url'] ?? null;
+
+            if (!$title || !$url) {
+                continue;
+            }
+
+            $description = $article['description'] ?? '';
+            $content = $article['content'] ?? '';
+            $sourceName = $article['source']['name'] ?? 'GNews';
+            $publishedAt = $this->parsePublishedAt($article['publishedAt'] ?? null);
+
+            $savedArticles->push(
+                $this->storeNewsArticle(
+                    $country,
+                    $title,
+                    $description,
+                    $content,
+                    $sourceName,
+                    $url,
+                    $publishedAt
+                )
+            );
+        }
+
+        return $savedArticles;
+    }
+
+    private function saveGdeltArticles(Country $country, array $articles): Collection
+    {
+        $savedArticles = collect();
+
+        foreach ($articles as $article) {
+            $title = $article['title'] ?? null;
+            $url = $article['url'] ?? null;
+
+            if (!$title || !$url) {
+                continue;
+            }
+
+            $domain = $article['domain'] ?? 'GDELT';
+            $sourceCountry = $article['sourcecountry'] ?? '';
+            $description = 'Source country: ' . $sourceCountry . '. Article retrieved from GDELT global news monitoring.';
+            $content = $title;
+            $publishedAt = $this->parsePublishedAt($article['seendate'] ?? null);
+
+            $savedArticles->push(
+                $this->storeNewsArticle(
+                    $country,
+                    $title,
+                    $description,
+                    $content,
+                    'GDELT - ' . $domain,
+                    $url,
+                    $publishedAt
+                )
+            );
+        }
+
+        return $savedArticles;
+    }
+
+    private function storeNewsArticle(
+        Country $country,
+        string $title,
+        string $description,
+        string $content,
+        string $sourceName,
+        string $url,
+        $publishedAt
+    ) {
+        $textForSentiment = $title . ' ' . $description . ' ' . $content;
+        $sentiment = $this->analyzeSentiment($textForSentiment);
+
+        return NewsCache::updateOrCreate(
+            [
+                'country_id' => $country->id,
+                'url' => $url,
+            ],
+            [
+                'title' => Str::limit($title, 250, ''),
+                'description' => Str::limit($description, 250, ''),
+                'content' => Str::limit($content, 1000, ''),
+                'source' => Str::limit($sourceName, 100, ''),
+                'published_at' => $publishedAt,
+                'sentiment' => $sentiment['sentiment'],
+                'positive_score' => $sentiment['positive_score'],
+                'negative_score' => $sentiment['negative_score'],
+                'news_risk' => $sentiment['news_risk'],
+            ]
+        );
     }
 
     private function getCachedNews(Country $country, string $message): array
     {
         $cache = NewsCache::where('country_id', $country->id)
-            ->orderByDesc('published_at')
+            ->latest('published_at')
             ->limit(10)
             ->get();
 
-        if ($cache->isEmpty()) {
+        if ($cache->count() > 0) {
             return [
-                'success' => false,
-                'source' => 'none',
-                'message' => $message . ' Belum ada cache berita untuk negara ini.',
-                'data' => collect(),
+                'success' => true,
+                'status' => true,
+                'source' => 'cache',
+                'message' => $message . ' Menampilkan cache berita terakhir untuk negara ini.',
+                'data' => $cache,
             ];
         }
 
         return [
-            'success' => true,
-            'source' => 'cache',
-            'message' => $message,
-            'data' => $cache,
+            'success' => false,
+            'status' => false,
+            'source' => 'none',
+            'message' => $message . ' Belum ada berita spesifik untuk negara ini.',
+            'data' => collect(),
         ];
+    }
+
+    private function analyzeSentiment(string $text): array
+    {
+        $positiveWords = PositiveWord::pluck('word')
+            ->map(fn ($word) => strtolower($word))
+            ->toArray();
+
+        $negativeWords = NegativeWord::pluck('word')
+            ->map(fn ($word) => strtolower($word))
+            ->toArray();
+
+        $cleanText = strtolower($text);
+        $cleanText = preg_replace('/[^a-zA-Z\s]/', ' ', $cleanText);
+        $tokens = preg_split('/\s+/', $cleanText);
+
+        $positiveScore = 0;
+        $negativeScore = 0;
+
+        foreach ($tokens as $token) {
+            $token = trim($token);
+
+            if (!$token) {
+                continue;
+            }
+
+            $normalizedToken = $this->normalizeWord($token);
+
+            if (in_array($token, $positiveWords) || in_array($normalizedToken, $positiveWords)) {
+                $positiveScore++;
+            }
+
+            if (in_array($token, $negativeWords) || in_array($normalizedToken, $negativeWords)) {
+                $negativeScore++;
+            }
+        }
+
+        if ($positiveScore > $negativeScore) {
+            $sentiment = 'Positive';
+            $newsRisk = 20;
+        } elseif ($negativeScore > $positiveScore) {
+            $sentiment = 'Negative';
+            $newsRisk = $negativeScore >= 3 ? 80 : 60;
+        } else {
+            $sentiment = 'Neutral';
+            $newsRisk = 50;
+        }
+
+        return [
+            'sentiment' => $sentiment,
+            'positive_score' => $positiveScore,
+            'negative_score' => $negativeScore,
+            'news_risk' => $newsRisk,
+        ];
+    }
+
+    private function normalizeWord(string $word): string
+    {
+        foreach (['ing', 'ed', 'es', 's'] as $suffix) {
+            if (Str::endsWith($word, $suffix) && strlen($word) > strlen($suffix) + 2) {
+                return Str::beforeLast($word, $suffix);
+            }
+        }
+
+        return $word;
+    }
+
+    private function parsePublishedAt($publishedAt)
+    {
+        try {
+            return $publishedAt ? Carbon::parse($publishedAt) : now();
+        } catch (\Throwable $e) {
+            return now();
+        }
     }
 }

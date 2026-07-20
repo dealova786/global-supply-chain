@@ -14,10 +14,16 @@ use App\Http\Controllers\WatchlistController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\ArticleController as AdminArticleController;
 use App\Http\Controllers\Admin\SyncController as AdminSyncController;
+use App\Http\Controllers\Admin\PortController as AdminPortController;
+use App\Http\Controllers\Admin\SentimentWordController as AdminSentimentWordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -87,7 +93,19 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::delete('/articles/{article}', [AdminArticleController::class, 'destroy'])->name('articles.destroy');
 
     Route::get('/sync-center', [AdminSyncController::class, 'index'])->name('sync.index');
-Route::post('/sync/countries', [AdminSyncController::class, 'syncCountries'])->name('sync.countries');
+    Route::post('/sync/countries', [AdminSyncController::class, 'syncCountries'])->name('sync.countries');
+    Route::post('/ports/sync-api', [AdminPortController::class, 'syncApi'])
+    ->name('ports.syncApi');
+
+    Route::resource('ports', AdminPortController::class)->except(['show']);
+    Route::get('/sentiment-words', [AdminSentimentWordController::class, 'index'])
+        ->name('sentiment-words.index');
+
+    Route::post('/sentiment-words', [AdminSentimentWordController::class, 'store'])
+        ->name('sentiment-words.store');
+
+    Route::delete('/sentiment-words/{type}/{id}', [AdminSentimentWordController::class, 'destroy'])
+        ->name('sentiment-words.destroy');
 });
 
 });

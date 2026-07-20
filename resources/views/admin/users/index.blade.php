@@ -4,7 +4,6 @@
     <div class="mb-4">
         <h3>Admin Users</h3>
         <p class="text-muted">
-            Halaman ini digunakan admin untuk mengelola data pengguna sistem.
         </p>
     </div>
 

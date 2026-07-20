@@ -45,4 +45,8 @@ return [
         'base_url' => env('REST_COUNTRIES_BASE_URL', 'https://api.restcountries.com/countries/v5'),
     ],
 
+    'geonames' => [
+        'username' => env('GEONAMES_USERNAME'),
+        'base_url' => env('GEONAMES_BASE_URL', 'https://secure.geonames.org'),
+    ],
 ];

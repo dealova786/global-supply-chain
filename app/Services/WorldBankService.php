@@ -10,124 +10,136 @@ class WorldBankService
 {
     public function getEconomicData(Country $country): array
     {
-        if (!$country->cca2) {
-            return $this->getCachedEconomy(
-                $country,
-                'Kode negara tidak tersedia. Menampilkan data cache jika ada.'
-            );
+        $countryCode = strtolower($country->cca2);
+
+        if (!$countryCode) {
+            return $this->getCachedEconomicData($country, 'Kode negara tidak tersedia.');
         }
 
         try {
-            $countryCode = strtolower($country->cca2);
-
             $gdp = $this->fetchLatestIndicatorValue($countryCode, 'NY.GDP.MKTP.CD');
             $inflation = $this->fetchLatestIndicatorValue($countryCode, 'FP.CPI.TOTL.ZG');
             $population = $this->fetchLatestIndicatorValue($countryCode, 'SP.POP.TOTL');
             $exports = $this->fetchLatestIndicatorValue($countryCode, 'NE.EXP.GNFS.CD');
             $imports = $this->fetchLatestIndicatorValue($countryCode, 'NE.IMP.GNFS.CD');
 
-            if (!$gdp && !$inflation && !$population && !$exports && !$imports) {
-                return $this->getCachedEconomy(
-                    $country,
-                    'World Bank API gagal memberikan data. Menampilkan data cache terakhir jika tersedia.'
-                );
+            $year = collect([
+                $gdp['year'] ?? null,
+                $inflation['year'] ?? null,
+                $population['year'] ?? null,
+                $exports['year'] ?? null,
+                $imports['year'] ?? null,
+            ])->filter()->max();
+
+            if (
+                is_null($gdp['value']) &&
+                is_null($inflation['value']) &&
+                is_null($population['value']) &&
+                is_null($exports['value']) &&
+                is_null($imports['value'])
+            ) {
+                return $this->getCachedEconomicData($country, 'World Bank API tidak menemukan data ekonomi untuk negara ini.');
             }
 
-            $year = $gdp['year']
-                ?? $inflation['year']
-                ?? $population['year']
-                ?? $exports['year']
-                ?? $imports['year']
-                ?? now()->year;
-
-            $economic = EconomicIndicator::updateOrCreate(
-                [
-                    'country_id' => $country->id,
-                    'year' => $year,
-                ],
-                [
-                    'gdp' => $gdp['value'] ?? null,
-                    'inflation' => $inflation['value'] ?? null,
-                    'population' => $population['value'] ?? null,
-                    'exports' => $exports['value'] ?? null,
-                    'imports' => $imports['value'] ?? null,
-                ]
-            );
+            $economic = EconomicIndicator::create([
+                'country_id' => $country->id,
+                'gdp' => $gdp['value'],
+                'inflation' => $inflation['value'],
+                'population' => $population['value'],
+                'exports' => $exports['value'],
+                'imports' => $imports['value'],
+                'year' => $year,
+            ]);
 
             return [
                 'success' => true,
                 'source' => 'api',
-                'message' => 'Economic data retrieved successfully.',
+                'message' => 'Economic data retrieved successfully from World Bank API.',
                 'data' => [
-                    'year' => $economic->year,
                     'gdp' => $economic->gdp,
                     'inflation' => $economic->inflation,
                     'population' => $economic->population,
                     'exports' => $economic->exports,
                     'imports' => $economic->imports,
+                    'year' => $economic->year,
+                    'gdp_year' => $gdp['year'],
+                    'inflation_year' => $inflation['year'],
+                    'population_year' => $population['year'],
+                    'exports_year' => $exports['year'],
+                    'imports_year' => $imports['year'],
                 ],
             ];
-
         } catch (\Throwable $e) {
-            return $this->getCachedEconomy(
+            return $this->getCachedEconomicData(
                 $country,
-                'World Bank API timeout atau koneksi gagal. Menampilkan data cache terakhir jika tersedia.'
+                'World Bank API timeout atau koneksi gagal. Menampilkan cache terakhir jika tersedia.'
             );
         }
     }
 
-    private function fetchLatestIndicatorValue(string $countryCode, string $indicatorCode): ?array
+    private function fetchLatestIndicatorValue(string $countryCode, string $indicatorCode): array
     {
         try {
-            $url = "https://api.worldbank.org/v2/country/{$countryCode}/indicator/{$indicatorCode}";
-
-            $response = Http::connectTimeout(4)
-                ->timeout(8)
+            $response = Http::connectTimeout(5)
+                ->timeout(10)
                 ->retry(1, 500)
-                ->get($url, [
+                ->get("https://api.worldbank.org/v2/country/{$countryCode}/indicator/{$indicatorCode}", [
                     'format' => 'json',
-                    'per_page' => 5,
+                    'per_page' => 80,
                 ]);
 
             if (!$response->successful()) {
-                return null;
+                return [
+                    'value' => null,
+                    'year' => null,
+                ];
             }
 
             $json = $response->json();
 
-            if (!isset($json[1]) || !is_array($json[1])) {
-                return null;
-            }
+            $records = $json[1] ?? [];
 
-            foreach ($json[1] as $item) {
-                if (isset($item['value']) && $item['value'] !== null) {
+            foreach ($records as $record) {
+                if (array_key_exists('value', $record) && !is_null($record['value'])) {
                     return [
-                        'year' => (int) $item['date'],
-                        'value' => $item['value'],
+                        'value' => $record['value'],
+                        'year' => $record['date'] ?? null,
                     ];
                 }
             }
 
-            return null;
-
+            return [
+                'value' => null,
+                'year' => null,
+            ];
         } catch (\Throwable $e) {
-            return null;
+            return [
+                'value' => null,
+                'year' => null,
+            ];
         }
     }
 
-    private function getCachedEconomy(Country $country, string $message): array
+    private function getCachedEconomicData(Country $country, string $message): array
     {
         $cache = EconomicIndicator::where('country_id', $country->id)
-            ->orderByDesc('year')
-            ->latest()
+            ->latest('year')
+            ->latest('id')
             ->first();
 
         if (!$cache) {
             return [
                 'success' => false,
                 'source' => 'none',
-                'message' => $message . ' Belum ada data ekonomi cache untuk negara ini.',
-                'data' => null,
+                'message' => $message . ' Belum ada cache data ekonomi untuk negara ini.',
+                'data' => [
+                    'gdp' => null,
+                    'inflation' => null,
+                    'population' => $country->population,
+                    'exports' => null,
+                    'imports' => null,
+                    'year' => null,
+                ],
             ];
         }
 
@@ -136,12 +148,12 @@ class WorldBankService
             'source' => 'cache',
             'message' => $message,
             'data' => [
-                'year' => $cache->year,
                 'gdp' => $cache->gdp,
                 'inflation' => $cache->inflation,
                 'population' => $cache->population,
                 'exports' => $cache->exports,
                 'imports' => $cache->imports,
+                'year' => $cache->year,
             ],
         ];
     }

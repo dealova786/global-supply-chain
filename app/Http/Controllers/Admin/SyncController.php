@@ -40,13 +40,11 @@ class SyncController extends Controller
         $result = $countrySyncService->sync();
 
         if ($result['status']) {
-            return redirect()
-                ->route('admin.sync.index')
-                ->with('success', $result['message'] . ' Total synced: ' . $result['synced'] . ', skipped: ' . $result['skipped']);
+            return back()
+            ->with('success', $result['message'] . ' Synced: ' . $result['synced'] . ', skipped: ' . $result['skipped']);
         }
 
-        return redirect()
-            ->route('admin.sync.index')
+            return back()
             ->with('error', $result['message']);
-    }
+        }
 }

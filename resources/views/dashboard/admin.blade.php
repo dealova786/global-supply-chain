@@ -1,16 +1,36 @@
 @extends('layouts.dashboard')
 
 @section('content')
-    <div class="mb-4">
-        <h3>Admin Control Center</h3>
-        <p class="text-muted">
-            Dashboard ini digunakan admin untuk mengelola sistem, data API, user, artikel, dan data pendukung monitoring risiko rantai pasok global.
-        </p>
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h3>Admin Dashboard</h3>
+            <p class="text-muted mb-0">
+                Ringkasan data sistem dan kontrol sinkronisasi API.
+            </p>
+        </div>
+
+        <form method="POST" action="{{ route('admin.sync.countries') }}">
+            @csrf
+            <button type="submit" class="btn btn-primary">
+                Sync Countries from API
+            </button>
+        </form>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="alert alert-primary">
-        Selamat datang, <strong>{{ auth()->user()->name }}</strong>. 
-        Anda login sebagai <strong>Administrator</strong>.
+        Selamat datang, <strong>{{ auth()->user()->name }}</strong>.
     </div>
 
     <div class="row g-3 mb-4">
@@ -39,7 +59,7 @@
                 <div class="card-body">
                     <h6>Total Ports</h6>
                     <h3>{{ $totalPorts }}</h3>
-                    <small class="text-muted">Data pelabuhan dalam database</small>
+                    <small class="text-muted">Data pelabuhan dari GeoNames API</small>
                 </div>
             </div>
         </div>
@@ -49,7 +69,7 @@
                 <div class="card-body">
                     <h6>Total Articles</h6>
                     <h3>{{ $totalArticles }}</h3>
-                    <small class="text-muted">Artikel analisis yang dikelola admin</small>
+                    <small class="text-muted">Artikel analisis dikelola admin</small>
                 </div>
             </div>
         </div>
@@ -79,8 +99,8 @@
         <div class="card-body">
             <h5>System Overview</h5>
             <p class="text-muted mb-0">
-                Admin bertugas mengelola data master, melakukan sinkronisasi API, mengelola user, serta memastikan data pendukung seperti artikel, pelabuhan, dan sentiment words tersedia. 
-                Sementara user/analyst menggunakan sistem untuk memantau risiko rantai pasok berdasarkan negara yang dipilih.
+                Admin dapat mengelola data pengguna, artikel, pelabuhan, sentiment words,
+                serta melakukan sinkronisasi data negara dari API untuk mendukung monitoring risiko rantai pasok global.
             </p>
         </div>
     </div>

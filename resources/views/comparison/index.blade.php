@@ -159,61 +159,96 @@
                                 <th>{{ $countryB->name }}</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             <tr>
                                 <th>GDP</th>
-                                <td>
-                                    $ {{ number_format($dataA['economic']?->gdp ?? 0, 0) }}
-                                </td>
-                                <td>
-                                    $ {{ number_format($dataB['economic']?->gdp ?? 0, 0) }}
-                                </td>
+                                <td>$ {{ number_format($dataA['economy']->gdp ?? 0, 0) }}</td>
+                                <td>$ {{ number_format($dataB['economy']->gdp ?? 0, 0) }}</td>
                             </tr>
 
-                            <tr>
-                                <th>Inflation</th>
-                                <td>
-                                    {{ number_format($dataA['economic']?->inflation ?? 0, 2) }}%
-                                </td>
-                                <td>
-                                    {{ number_format($dataB['economic']?->inflation ?? 0, 2) }}%
-                                </td>
-                            </tr>
+                            <td>
+                                @if(!is_null($dataA['economy']->inflation ?? null))
+                                    {{ number_format($dataA['economy']->inflation, 2) }}%
+                                @else
+                                    <span class="text-muted">Data tidak tersedia</span>
+                                @endif
+                            </td>
+
+                            <td>
+                                @if(!is_null($dataB['economy']->inflation ?? null))
+                                    {{ number_format($dataB['economy']->inflation, 2) }}%
+                                @else
+                                    <span class="text-muted">Data tidak tersedia</span>
+                                @endif
+                            </td>
 
                             <tr>
                                 <th>Weather Risk</th>
-                                <td>{{ $dataA['weather']?->weather_risk ?? '-' }}</td>
-                                <td>{{ $dataB['weather']?->weather_risk ?? '-' }}</td>
+                                <td>{{ $dataA['risk']->weather_risk ?? 0 }}</td>
+                                <td>{{ $dataB['risk']->weather_risk ?? 0 }}</td>
                             </tr>
 
                             <tr>
                                 <th>Currency Risk</th>
-                                <td>{{ $dataA['currency']?->currency_risk ?? '-' }}</td>
-                                <td>{{ $dataB['currency']?->currency_risk ?? '-' }}</td>
+                                <td>{{ $dataA['risk']->currency_risk ?? 0 }}</td>
+                                <td>{{ $dataB['risk']->currency_risk ?? 0 }}</td>
+                            </tr>
+
+                            <tr>
+                                <th>News Risk</th>
+                                <td>{{ $dataA['risk']->news_risk ?? 0 }}</td>
+                                <td>{{ $dataB['risk']->news_risk ?? 0 }}</td>
                             </tr>
 
                             <tr>
                                 <th>Total Risk Score</th>
                                 <td>
-                                    <strong>{{ $dataA['risk']?->total_score ?? '-' }}</strong>
+                                    <strong>{{ $dataA['risk']->total_score ?? 0 }}</strong>
                                 </td>
                                 <td>
-                                    <strong>{{ $dataB['risk']?->total_score ?? '-' }}</strong>
+                                    <strong>{{ $dataB['risk']->total_score ?? 0 }}</strong>
                                 </td>
                             </tr>
 
                             <tr>
                                 <th>Risk Level</th>
-                                <td>{{ $dataA['risk']?->risk_level ?? '-' }}</td>
-                                <td>{{ $dataB['risk']?->risk_level ?? '-' }}</td>
+                                <td>
+                                    @if(($dataA['risk']->risk_level ?? '') === 'Low')
+                                        <span class="badge bg-success">Low</span>
+                                    @elseif(($dataA['risk']->risk_level ?? '') === 'Medium')
+                                        <span class="badge bg-warning text-dark">Medium</span>
+                                    @elseif(($dataA['risk']->risk_level ?? '') === 'High')
+                                        <span class="badge bg-danger">High</span>
+                                    @else
+                                        <span class="badge bg-secondary">Unknown</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if(($dataB['risk']->risk_level ?? '') === 'Low')
+                                        <span class="badge bg-success">Low</span>
+                                    @elseif(($dataB['risk']->risk_level ?? '') === 'Medium')
+                                        <span class="badge bg-warning text-dark">Medium</span>
+                                    @elseif(($dataB['risk']->risk_level ?? '') === 'High')
+                                        <span class="badge bg-danger">High</span>
+                                    @else
+                                        <span class="badge bg-secondary">Unknown</span>
+                                    @endif
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
-                <small class="text-muted">
-                    Jika beberapa data masih kosong, buka terlebih dahulu Country Dashboard untuk negara tersebut agar sistem mengambil data API dan menghitung risk score.
-                </small>
+                @if(isset($decision) && $decision)
+                    <div class="alert alert-primary mt-4 mb-0">
+                        <h6 class="mb-2">Decision Recommendation</h6>
+                        <strong>{{ $decision['title'] }}</strong>
+                        <p class="mb-0 mt-2">
+                            {{ $decision['summary'] }}
+                        </p>
+                    </div>
+                @endif
             </div>
         </div>
 
