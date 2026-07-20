@@ -432,6 +432,162 @@
             display: block;
         }
 
+        .modern-map {
+            height: 460px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--border-soft);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,.4);
+        }
+
+        .leaflet-control-layers,
+        .leaflet-control-zoom a {
+            border: none !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, .16) !important;
+            border-radius: 12px !important;
+        }
+
+        .leaflet-control-layers {
+            padding: 8px;
+        }
+
+        .leaflet-popup-content-wrapper {
+            border-radius: 16px;
+            box-shadow: 0 18px 40px rgba(15, 23, 42, .22);
+        }
+
+        .leaflet-popup-content {
+            margin: 14px 16px;
+            font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        }
+
+        .map-popup-title {
+            font-weight: 800;
+            font-size: 15px;
+            color: #0f172a;
+            margin-bottom: 6px;
+        }
+
+        .map-popup-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: #475569;
+        }
+
+        .map-popup-row strong {
+            color: #0f172a;
+        }
+
+        .map-status-badge {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 5px;
+        }
+
+        .map-status-normal {
+            background: #16a34a;
+        }
+
+        .map-status-moderate {
+            background: #d97706;
+        }
+
+        .map-status-high {
+            background: #dc2626;
+        }
+
+        .map-status-none {
+            background: #64748b;
+        }
+
+        .port-marker {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 8px 20px rgba(15, 23, 42, .28);
+        }
+
+        .port-marker.high-risk {
+            position: relative;
+        }
+
+        .port-marker.high-risk::after {
+            content: "";
+            position: absolute;
+            inset: -7px;
+            border-radius: 50%;
+            border: 2px solid rgba(220, 38, 38, .45);
+            animation: mapPulse 1.4s infinite;
+        }
+
+        @keyframes mapPulse {
+            0% {
+                transform: scale(.7);
+                opacity: .9;
+            }
+            100% {
+                transform: scale(1.8);
+                opacity: 0;
+            }
+        }
+
+        .route-port-marker {
+            width: 28px;
+            height: 28px;
+            border-radius: 12px;
+            background: #2563eb;
+            color: #ffffff;
+            border: 3px solid #ffffff;
+            box-shadow: 0 10px 24px rgba(37, 99, 235, .35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .destination-marker {
+            background: #16a34a;
+            box-shadow: 0 10px 24px rgba(22, 163, 74, .35);
+        }
+
+        .map-legend {
+            background: rgba(255,255,255,.94);
+            padding: 12px 14px;
+            border-radius: 16px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, .16);
+            font-size: 12px;
+            line-height: 1.5;
+            color: #334155;
+        }
+
+        .map-legend-title {
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 8px;
+        }
+
+        .map-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .map-legend-dot {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
         @media (max-width: 992px) {
         .sidebar {
             width: 265px;

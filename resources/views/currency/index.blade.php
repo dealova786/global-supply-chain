@@ -2,185 +2,294 @@
 
 @section('content')
     <div class="mb-4">
-        <h3>Currency Impact Dashboard</h3>
-        <p class="text-muted">
-            Halaman ini menampilkan nilai tukar mata uang negara dan dampaknya terhadap risiko rantai pasok.
+        <h1 class="page-title">Currency Risk Dashboard</h1>
+        <p class="page-subtitle">
+            Pantau perubahan nilai tukar dan risiko kurs berdasarkan data dari Currency API yang tersimpan di cache sistem.
         </p>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4">
+    <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('currency.index') }}">
+            <form method="GET" action="{{ url('/currency-dashboard') }}">
                 <div class="row align-items-end">
-                    <div class="col-md-8">
+                    <div class="col-md-7">
                         <label class="form-label">Pilih Negara</label>
-                        <select name="country_id" class="form-select" required>
-                            <option value="">-- Pilih Negara --</option>
+                        <select name="country_id" class="form-select">
+                            <option value="">-- Semua Negara --</option>
+
                             @foreach($countries as $country)
                                 <option value="{{ $country->id }}"
                                     {{ request('country_id') == $country->id ? 'selected' : '' }}>
-                                    {{ $country->name }} - {{ $country->currency_code }}
+                                    {{ $country->name }}
+                                    @if($country->currency_code)
+                                        - {{ $country->currency_code }}
+                                    @endif
                                 </option>
                             @endforeach
                         </select>
                     </div>
 
-                    <div class="col-md-4">
+                    <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">
-                            Analyze Currency
+                            Analyze
                         </button>
+                    </div>
+
+                    <div class="col-md-2">
+                        @if($selectedCountry)
+                            <a href="{{ url('/currency-dashboard?country_id=' . $selectedCountry->id . '&sync=1') }}"
+                               class="btn btn-success w-100">
+                                Update API
+                            </a>
+                        @else
+                            <button type="button" class="btn btn-success w-100" disabled>
+                                Update API
+                            </button>
+                        @endif
+                    </div>
+
+                    <div class="col-md-1">
+                        <a href="{{ url('/currency-dashboard') }}" class="btn btn-secondary w-100">
+                            Reset
+                        </a>
                     </div>
                 </div>
             </form>
+
+            <small class="text-muted d-block mt-3">
+                Data source: Currency API cache. Tombol Update API hanya aktif setelah memilih negara agar request API tidak boros.
+            </small>
         </div>
     </div>
 
-    @if($selectedCountry && $latestCurrency)
+    @if($message)
         <div class="alert alert-info">
-            Menampilkan data kurs untuk negara:
-            <strong>{{ $selectedCountry->name }}</strong>
+            {{ $message }}
         </div>
+    @endif
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Base Currency</h6>
-                        <h3>{{ $latestCurrency->base_currency }}</h3>
-                        <small>{{ $selectedCountry->currency_name }}</small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Exchange Rate</h6>
-                        <h3>{{ number_format($latestCurrency->exchange_rate, 6) }}</h3>
-                        <small>
-                            1 {{ $latestCurrency->base_currency }} =
-                            {{ number_format($latestCurrency->exchange_rate, 6) }}
-                            {{ $latestCurrency->target_currency }}
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h6>Currency Risk</h6>
-                        <h3>{{ $latestCurrency->currency_risk }}</h3>
-
-                        @if($latestCurrency->currency_risk <= 30)
-                            <span class="badge bg-success">Low Risk</span>
-                        @elseif($latestCurrency->currency_risk <= 60)
-                            <span class="badge bg-warning text-dark">Medium Risk</span>
-                        @else
-                            <span class="badge bg-danger">High Risk</span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="card shadow-sm border-0 mb-4">
-            <div class="card-body">
-                <h5 class="mb-3">Currency Trend Chart</h5>
-                <canvas id="currencyTrendChart" height="100"></canvas>
-            </div>
-        </div>
-
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h5 class="mb-3">Currency Rate History</h5>
-
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-dark">
-                            <tr>
-                                <th>No</th>
-                                <th>Base</th>
-                                <th>Target</th>
-                                <th>Exchange Rate</th>
-                                <th>Currency Risk</th>
-                                <th>Rate Date</th>
-                                <th>Created At</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($currencyRates as $rate)
-                                <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $rate->base_currency }}</td>
-                                    <td>{{ $rate->target_currency }}</td>
-                                    <td>{{ number_format($rate->exchange_rate, 6) }}</td>
-                                    <td>
-                                        @if($rate->currency_risk <= 30)
-                                            <span class="badge bg-success">{{ $rate->currency_risk }} Low</span>
-                                        @elseif($rate->currency_risk <= 60)
-                                            <span class="badge bg-warning text-dark">{{ $rate->currency_risk }} Medium</span>
-                                        @else
-                                            <span class="badge bg-danger">{{ $rate->currency_risk }} High</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $rate->rate_date }}</td>
-                                    <td>{{ $rate->created_at->format('d M Y H:i') }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-            </div>
-        </div>
-    @elseif($selectedCountry)
-        <div class="alert alert-warning">
-            Data kurs untuk negara ini belum tersedia.
+    @if($selectedCountry)
+        <div class="alert alert-primary">
+            Menampilkan currency risk untuk <strong>{{ $selectedCountry->name }}</strong>
+            @if($selectedCountry->currency_code)
+                dengan mata uang <strong>{{ $selectedCountry->currency_code }}</strong>.
+            @endif
         </div>
     @else
         <div class="alert alert-secondary">
-            Silakan pilih negara untuk melihat data kurs mata uang.
+            Menampilkan ringkasan currency risk terbaru dari semua negara yang sudah memiliki data kurs.
         </div>
     @endif
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="bi bi-currency-exchange"></i>
+                </div>
+                <div class="stat-label">Average Currency Risk</div>
+                <div class="stat-value">{{ $averageCurrencyRisk }}</div>
+                <div class="stat-note">Rata-rata dari data tampil</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="bi bi-graph-down-arrow"></i>
+                </div>
+                <div class="stat-label">Low Risk</div>
+                <div class="stat-value">{{ $lowRiskCount }}</div>
+                <div class="stat-note">Fluktuasi rendah</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="bi bi-activity"></i>
+                </div>
+                <div class="stat-label">Medium Risk</div>
+                <div class="stat-value">{{ $mediumRiskCount }}</div>
+                <div class="stat-note">Perlu dipantau</div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="stat-card">
+                <div class="stat-icon danger">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="stat-label">High Risk</div>
+                <div class="stat-value">{{ $highRiskCount }}</div>
+                <div class="stat-note">Volatilitas tinggi</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="stock-chart-card h-100">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <div class="stock-chart-title">
+                            @if($selectedCountry)
+                                Exchange Rate Movement
+                            @else
+                                Currency Risk Movement
+                            @endif
+                        </div>
+
+                        <div class="stock-chart-subtitle">
+                            @if($selectedCountry)
+                                Grafik pergerakan nilai tukar {{ $selectedCountry->currency_code ?? '-' }} terhadap USD.
+                            @else
+                                Grafik ringkasan currency risk dari data terbaru beberapa negara.
+                            @endif
+                        </div>
+                    </div>
+
+                    <span class="badge bg-primary">Stock Style</span>
+                </div>
+
+                <div class="chart-box">
+                    <canvas id="currencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="mb-3">Latest Currency Data</h5>
+
+                    @if($latestCurrency)
+                        <div class="mb-3">
+                            <span class="text-muted">Base Currency</span>
+                            <h4 class="mb-0">{{ $latestCurrency->base_currency }}</h4>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="text-muted">Target Currency</span>
+                            <h4 class="mb-0">{{ $latestCurrency->target_currency }}</h4>
+                        </div>
+
+                        <div class="mb-3">
+                            <span class="text-muted">Exchange Rate</span>
+                            <h4 class="mb-0">{{ number_format($latestCurrency->exchange_rate, 6) }}</h4>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Currency Risk</span>
+                                <strong>{{ round($latestCurrency->currency_risk) }}</strong>
+                            </div>
+
+                            <div class="progress" style="height: 9px;">
+                                <div class="progress-bar
+                                    @if($latestCurrency->currency_risk > 60)
+                                        bg-danger
+                                    @elseif($latestCurrency->currency_risk > 30)
+                                        bg-warning
+                                    @else
+                                        bg-success
+                                    @endif"
+                                    style="width: {{ min(round($latestCurrency->currency_risk), 100) }}%">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="alert alert-primary mb-0">
+                            <strong>Last Updated:</strong><br>
+                            {{ \Carbon\Carbon::parse($latestCurrency->recorded_at ?? $latestCurrency->created_at)->diffForHumans() }}
+                        </div>
+                    @else
+                        <div class="alert alert-secondary mb-0">
+                            Belum ada data currency. Pilih negara lalu klik <strong>Update API</strong>.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h5 class="mb-3">Latest Currency Records</h5>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Country</th>
+                            <th>Base</th>
+                            <th>Target</th>
+                            <th>Exchange Rate</th>
+                            <th>Currency Risk</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @forelse($currencyRows as $currency)
+                            <tr>
+                                <td>{{ $loop->iteration }}</td>
+
+                                <td>
+                                    <strong>{{ $currency->country->name ?? $selectedCountry->name ?? '-' }}</strong>
+                                </td>
+
+                                <td>{{ $currency->base_currency }}</td>
+
+                                <td>{{ $currency->target_currency }}</td>
+
+                                <td>{{ number_format($currency->exchange_rate, 6) }}</td>
+
+                                <td>
+                                    <strong>{{ round($currency->currency_risk) }}</strong>
+                                </td>
+
+                                <td>
+                                    @if($currency->currency_risk > 60)
+                                        <span class="badge bg-danger">High Risk</span>
+                                    @elseif($currency->currency_risk > 30)
+                                        <span class="badge bg-warning text-dark">Medium Risk</span>
+                                    @else
+                                        <span class="badge bg-success">Low Risk</span>
+                                    @endif
+                                </td>
+
+                                <td>
+                                    {{ \Carbon\Carbon::parse($currency->recorded_at ?? $currency->created_at)->diffForHumans() }}
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    Belum ada data currency. Pilih negara lalu klik Update API untuk mengambil data dari Currency API.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
 @endsection
 
 @section('scripts')
-@if($selectedCountry && $currencyRates->count() > 0)
-<script>
-    const currencyLabels = @json($chartLabels);
-    const currencyData = @json($chartData);
+    <script>
+        const currencyLabels = @json($chartLabels->count() ? $chartLabels : ['No Data']);
+        const currencyValues = @json($chartValues->count() ? $chartValues : [0]);
 
-    const ctx = document.getElementById('currencyTrendChart');
-
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: currencyLabels,
-            datasets: [{
-                label: 'Exchange Rate to USD',
-                data: currencyData,
-                tension: 0.3,
-                fill: false,
-                borderWidth: 3,
-                pointRadius: 5,
-                pointHoverRadius: 7
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: true
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: false
-                }
-            }
-        }
-    });
-</script>
-@endif
+        renderStockLineChart(
+            'currencyChart',
+            currencyLabels,
+            currencyValues,
+            '{{ $selectedCountry ? "Exchange Rate" : "Currency Risk" }}'
+        );
+    </script>
 @endsection

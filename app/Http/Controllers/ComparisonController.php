@@ -16,7 +16,7 @@ class ComparisonController extends Controller
     {
         $countries = Country::orderBy('name', 'asc')->get();
 
-                $countryA = $request->filled('country_a')
+        $countryA = $request->filled('country_a')
             ? Country::find($request->country_a)
             : null;
 
@@ -32,46 +32,27 @@ class ComparisonController extends Controller
             ? $this->buildComparisonData($countryB)
             : null;
 
-        $chartLabels = [
-            $countryA?->name ?? 'Country A',
-            $countryB?->name ?? 'Country B',
-        ];
+        $componentLabels = ['Weather', 'Inflation', 'News', 'Currency', 'Total'];
 
-        $gdpChartData = [
-            $dataA['economy']->gdp ?? 0,
-            $dataB['economy']->gdp ?? 0,
-        ];
+        $componentDataA = $dataA ? [
+            round($dataA['risk']->weather_risk),
+            round($dataA['risk']->inflation_risk),
+            round($dataA['risk']->news_risk),
+            round($dataA['risk']->currency_risk),
+            round($dataA['risk']->total_score),
+        ] : [];
 
-        $inflationChartData = [
-            $dataA['economy']->inflation ?? 0,
-            $dataB['economy']->inflation ?? 0,
-        ];
-
-        $riskChartData = [
-            $dataA['risk']->total_score ?? 0,
-            $dataB['risk']->total_score ?? 0,
-        ];
-
-        $weatherRiskChartData = [
-            $dataA['risk']->weather_risk ?? 0,
-            $dataB['risk']->weather_risk ?? 0,
-        ];
-
-        $currencyRiskChartData = [
-            $dataA['risk']->currency_risk ?? 0,
-            $dataB['risk']->currency_risk ?? 0,
-        ];
-
-        $newsRiskChartData = [
-            $dataA['risk']->news_risk ?? 0,
-            $dataB['risk']->news_risk ?? 0,
-        ];
+        $componentDataB = $dataB ? [
+            round($dataB['risk']->weather_risk),
+            round($dataB['risk']->inflation_risk),
+            round($dataB['risk']->news_risk),
+            round($dataB['risk']->currency_risk),
+            round($dataB['risk']->total_score),
+        ] : [];
 
         $decision = ($countryA && $countryB && $dataA && $dataB)
             ? $this->buildDecisionSummary($countryA, $countryB, $dataA, $dataB)
             : null;
-
-        $decision = $this->buildDecisionSummary($countryA, $countryB, $dataA, $dataB);
 
         return view('comparison.index', compact(
             'countries',
@@ -79,13 +60,9 @@ class ComparisonController extends Controller
             'countryB',
             'dataA',
             'dataB',
-            'chartLabels',
-            'gdpChartData',
-            'inflationChartData',
-            'riskChartData',
-            'weatherRiskChartData',
-            'currencyRiskChartData',
-            'newsRiskChartData',
+            'componentLabels',
+            'componentDataA',
+            'componentDataB',
             'decision'
         ));
     }
@@ -205,12 +182,8 @@ class ComparisonController extends Controller
         return 'High';
     }
 
-    private function buildDecisionSummary($countryA, $countryB, $dataA, $dataB): ?array
+    private function buildDecisionSummary($countryA, $countryB, $dataA, $dataB): array
     {
-        if (!$countryA || !$countryB || !$dataA || !$dataB) {
-            return null;
-        }
-
         $scoreA = $dataA['risk']->total_score ?? 0;
         $scoreB = $dataB['risk']->total_score ?? 0;
 
@@ -218,22 +191,27 @@ class ComparisonController extends Controller
             $winner = $countryA->name;
             $loser = $countryB->name;
             $gap = $scoreB - $scoreA;
-        } elseif ($scoreB < $scoreA) {
+
+            return [
+                'title' => $winner . ' lebih unggul untuk dipertimbangkan',
+                'summary' => $winner . ' memiliki total risk score lebih rendah dibandingkan ' . $loser . ' dengan selisih ' . $gap . ' poin. Negara ini relatif lebih aman untuk dipertimbangkan dalam keputusan rantai pasok.',
+            ];
+        }
+
+        if ($scoreB < $scoreA) {
             $winner = $countryB->name;
             $loser = $countryA->name;
             $gap = $scoreA - $scoreB;
-        } else {
+
             return [
-                'winner' => null,
-                'title' => 'Kedua negara relatif seimbang',
-                'summary' => 'Berdasarkan hasil perbandingan, kedua negara memiliki total risk score yang sama. Perusahaan perlu melihat indikator tambahan seperti inflasi, kurs, cuaca, dan berita sebelum menentukan keputusan.',
+                'title' => $winner . ' lebih unggul untuk dipertimbangkan',
+                'summary' => $winner . ' memiliki total risk score lebih rendah dibandingkan ' . $loser . ' dengan selisih ' . $gap . ' poin. Negara ini relatif lebih aman untuk dipertimbangkan dalam keputusan rantai pasok.',
             ];
         }
 
         return [
-            'winner' => $winner,
-            'title' => $winner . ' lebih unggul untuk dipertimbangkan',
-            'summary' => $winner . ' memiliki total risk score lebih rendah dibandingkan ' . $loser . ' dengan selisih ' . $gap . ' poin. Hal ini menunjukkan bahwa ' . $winner . ' relatif lebih aman untuk dipertimbangkan dalam keputusan rantai pasok karena tingkat risikonya lebih rendah.',
+            'title' => 'Kedua negara relatif seimbang',
+            'summary' => 'Berdasarkan hasil perbandingan, kedua negara memiliki total risk score yang sama. Perusahaan perlu melihat indikator tambahan seperti cuaca, inflasi, kurs, dan berita sebelum mengambil keputusan.',
         ];
     }
 }
