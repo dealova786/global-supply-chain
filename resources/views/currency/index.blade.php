@@ -8,11 +8,12 @@
         </p>
     </div>
 
+    {{-- Filter --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <form method="GET" action="{{ url('/currency-dashboard') }}">
                 <div class="row align-items-end">
-                    <div class="col-md-7">
+                    <div class="col-md-8">
                         <label class="form-label">Pilih Negara</label>
                         <select name="country_id" class="form-select">
                             <option value="">-- Semua Negara --</option>
@@ -36,19 +37,6 @@
                     </div>
 
                     <div class="col-md-2">
-                        @if($selectedCountry)
-                            <a href="{{ url('/currency-dashboard?country_id=' . $selectedCountry->id . '&sync=1') }}"
-                               class="btn btn-success w-100">
-                                Update API
-                            </a>
-                        @else
-                            <button type="button" class="btn btn-success w-100" disabled>
-                                Update API
-                            </button>
-                        @endif
-                    </div>
-
-                    <div class="col-md-1">
                         <a href="{{ url('/currency-dashboard') }}" class="btn btn-secondary w-100">
                             Reset
                         </a>
@@ -57,7 +45,7 @@
             </form>
 
             <small class="text-muted d-block mt-3">
-                Data source: Currency API cache. Tombol Update API hanya aktif setelah memilih negara agar request API tidak boros.
+                Data source: Currency API cache. Jika negara belum memiliki data kurs, sistem akan mengambil data dari API saat negara dipilih.
             </small>
         </div>
     </div>
@@ -81,6 +69,7 @@
         </div>
     @endif
 
+    {{-- Summary Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="stat-card">
@@ -127,6 +116,7 @@
         </div>
     </div>
 
+    {{-- Chart and Latest Currency --}}
     <div class="row g-4 mb-4">
         <div class="col-lg-8">
             <div class="stock-chart-card h-100">
@@ -134,7 +124,7 @@
                     <div>
                         <div class="stock-chart-title">
                             @if($selectedCountry)
-                                Exchange Rate Movement
+                                Currency Risk Movement
                             @else
                                 Currency Risk Movement
                             @endif
@@ -142,7 +132,7 @@
 
                         <div class="stock-chart-subtitle">
                             @if($selectedCountry)
-                                Grafik pergerakan nilai tukar {{ $selectedCountry->currency_code ?? '-' }} terhadap USD.
+                                Grafik pergerakan risiko kurs {{ $selectedCountry->currency_code ?? '-' }} terhadap USD.
                             @else
                                 Grafik ringkasan currency risk dari data terbaru beberapa negara.
                             @endif
@@ -205,7 +195,7 @@
                         </div>
                     @else
                         <div class="alert alert-secondary mb-0">
-                            Belum ada data currency. Pilih negara lalu klik <strong>Update API</strong>.
+                            Belum ada data currency. Pilih negara lalu klik <strong>Analyze</strong> untuk mengambil data dari Currency API.
                         </div>
                     @endif
                 </div>
@@ -213,6 +203,7 @@
         </div>
     </div>
 
+    {{-- Currency Records --}}
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <h5 class="mb-3">Latest Currency Records</h5>
@@ -268,7 +259,7 @@
                         @empty
                             <tr>
                                 <td colspan="8" class="text-center text-muted">
-                                    Belum ada data currency. Pilih negara lalu klik Update API untuk mengambil data dari Currency API.
+                                    Belum ada data currency. Pilih negara lalu klik Analyze untuk mengambil data dari Currency API.
                                 </td>
                             </tr>
                         @endforelse
@@ -289,7 +280,7 @@
             'currencyChart',
             currencyLabels,
             currencyValues,
-            '{{ $selectedCountry ? "Exchange Rate" : "Currency Risk" }}'
+            'Currency Risk'
         );
     </script>
 @endsection

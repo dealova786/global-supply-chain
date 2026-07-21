@@ -59,10 +59,6 @@
                     </div>
                 </div>
             </form>
-
-            <small class="text-muted d-block mt-3">
-                Data source: Open-Meteo API cache. Marker muncul jika negara sudah memiliki data weather yang tersimpan.
-            </small>
         </div>
     </div>
 
