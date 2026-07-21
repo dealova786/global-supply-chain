@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\AdminMiddleware;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CountryController;
@@ -80,7 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', AdminMiddleware::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
