@@ -15,6 +15,10 @@ class NewsService
 {
     public function getNewsByCountry(Country $country): array
     {
+        /*
+         * 1. Ambil dari cache dulu.
+         * Ini supaya dashboard tetap aman kalau quota GNews habis.
+         */
         $cache = NewsCache::where('country_id', $country->id)
             ->latest('published_at')
             ->limit(10)
@@ -30,6 +34,9 @@ class NewsService
             ];
         }
 
+        /*
+         * 2. Kalau belum ada cache, baru ambil dari GNews API.
+         */
         $gnewsResult = $this->fetchFromGNews($country);
 
         if ($gnewsResult['status'] && $gnewsResult['data']->count() > 0) {
@@ -75,10 +82,11 @@ class NewsService
         }
 
         try {
-            $query = $country->name . ' economy trade logistics';
+            $query = $country->name;
 
             $response = Http::connectTimeout(5)
                 ->timeout(10)
+                ->retry(1, 500)
                 ->get($baseUrl . '/search', [
                     'q' => $query,
                     'lang' => 'en',
@@ -112,6 +120,14 @@ class NewsService
 
             $articles = $response->json('articles') ?? [];
 
+            if (!is_array($articles) || count($articles) === 0) {
+                return [
+                    'status' => false,
+                    'message' => 'GNews API tidak menemukan berita untuk query: ' . $query,
+                    'data' => collect(),
+                ];
+            }
+
             $savedArticles = $this->saveArticles($country, $articles)
                 ->unique('url')
                 ->values();
@@ -119,7 +135,7 @@ class NewsService
             if ($savedArticles->count() === 0) {
                 return [
                     'status' => false,
-                    'message' => 'GNews API tidak menemukan berita untuk negara ini.',
+                    'message' => 'GNews API berhasil merespons, tetapi tidak ada artikel yang valid untuk disimpan.',
                     'data' => collect(),
                 ];
             }
@@ -133,64 +149,6 @@ class NewsService
             return [
                 'status' => false,
                 'message' => 'GNews API gagal: ' . $e->getMessage(),
-                'data' => collect(),
-            ];
-        }
-    }
-
-    private function fetchFromGdelt(Country $country): array
-    {
-        try {
-            $savedArticles = collect();
-
-            $queries = array_filter([
-                '"' . $country->name . '" AND (economy OR trade OR logistics OR shipping OR supply chain OR import OR export OR port OR inflation)',
-                '"' . $country->name . '" AND (business OR market OR currency OR transportation OR disruption)',
-                $country->region ? '"' . $country->region . '" AND (trade OR logistics OR shipping OR economy OR supply chain)' : null,
-            ]);
-
-            foreach ($queries as $query) {
-                $response = Http::connectTimeout(5)
-                    ->timeout(10)
-                    ->get('https://api.gdeltproject.org/api/v2/doc/doc', [
-                        'query' => $query,
-                        'mode' => 'artlist',
-                        'maxrecords' => 10,
-                        'format' => 'json',
-                        'sort' => 'datedesc',
-                        'timespan' => '1y',
-                    ]);
-
-                if ($response->successful()) {
-                    $savedArticles = $savedArticles->merge(
-                        $this->saveGdeltArticles($country, $response->json('articles') ?? [])
-                    );
-                }
-
-                if ($savedArticles->count() >= 5) {
-                    break;
-                }
-            }
-
-            $savedArticles = $savedArticles->unique('url')->values();
-
-            if ($savedArticles->count() === 0) {
-                return [
-                    'status' => false,
-                    'message' => 'GDELT API tidak menemukan berita.',
-                    'data' => collect(),
-                ];
-            }
-
-            return [
-                'status' => true,
-                'message' => 'News data retrieved successfully from GDELT API backup.',
-                'data' => $savedArticles,
-            ];
-        } catch (\Throwable $e) {
-            return [
-                'status' => false,
-                'message' => 'GDELT API gagal: ' . $e->getMessage(),
                 'data' => collect(),
             ];
         }
@@ -220,40 +178,6 @@ class NewsService
                     $description,
                     $content,
                     $sourceName,
-                    $url,
-                    $publishedAt
-                )
-            );
-        }
-
-        return $savedArticles;
-    }
-
-    private function saveGdeltArticles(Country $country, array $articles): Collection
-    {
-        $savedArticles = collect();
-
-        foreach ($articles as $article) {
-            $title = $article['title'] ?? null;
-            $url = $article['url'] ?? null;
-
-            if (!$title || !$url) {
-                continue;
-            }
-
-            $domain = $article['domain'] ?? 'GDELT';
-            $sourceCountry = $article['sourcecountry'] ?? '';
-            $description = 'Source country: ' . $sourceCountry . '. Article retrieved from GDELT global news monitoring.';
-            $content = $title;
-            $publishedAt = $this->parsePublishedAt($article['seendate'] ?? null);
-
-            $savedArticles->push(
-                $this->storeNewsArticle(
-                    $country,
-                    $title,
-                    $description,
-                    $content,
-                    'GDELT - ' . $domain,
                     $url,
                     $publishedAt
                 )
@@ -294,40 +218,22 @@ class NewsService
         );
     }
 
-    private function getCachedNews(Country $country, string $message): array
-    {
-        $cache = NewsCache::where('country_id', $country->id)
-            ->latest('published_at')
-            ->limit(10)
-            ->get();
-
-        if ($cache->count() > 0) {
-            return [
-                'success' => true,
-                'status' => true,
-                'source' => 'cache',
-                'message' => $message . ' Menampilkan cache berita terakhir untuk negara ini.',
-                'data' => $cache,
-            ];
-        }
-
-        return [
-            'success' => false,
-            'status' => false,
-            'source' => 'none',
-            'message' => $message . ' Belum ada berita spesifik untuk negara ini.',
-            'data' => collect(),
-        ];
-    }
-
     private function analyzeSentiment(string $text): array
     {
         $positiveWords = PositiveWord::pluck('word')
-            ->map(fn ($word) => strtolower($word))
+            ->map(function ($word) {
+                return strtolower(trim($word));
+            })
+            ->filter()
+            ->values()
             ->toArray();
 
         $negativeWords = NegativeWord::pluck('word')
-            ->map(fn ($word) => strtolower($word))
+            ->map(function ($word) {
+                return strtolower(trim($word));
+            })
+            ->filter()
+            ->values()
             ->toArray();
 
         $cleanText = strtolower($text);
