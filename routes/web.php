@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\SyncController as AdminSyncController;
 use App\Http\Controllers\Admin\PortController as AdminPortController;
 use App\Http\Controllers\Admin\SentimentWordController as AdminSentimentWordController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\AdminMiddleware;
 
 Route::get('/', function () {
     if (auth()->check()) {
@@ -80,7 +81,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 });
 
 
-Route::middleware(['auth', 'verified', 'admin'])
+Route::middleware(['auth', 'verified', AdminMiddleware::class])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
