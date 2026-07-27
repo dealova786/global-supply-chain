@@ -404,26 +404,6 @@ Menjalankan server lokal:
 php artisan serve
 ```
 
----
-
-## Catatan Penting
-
-Jangan menjalankan perintah berikut kecuali benar-benar ingin menghapus seluruh data:
-
-```bash
-php artisan migrate:fresh
-```
-
-Perintah tersebut akan menghapus seluruh isi database, termasuk akun admin, data negara, data API cache, artikel, ports, sentiment words, dan watchlist.
-
-Jika hanya ingin menjalankan migration baru tanpa menghapus data lama, gunakan:
-
-```bash
-php artisan migrate
-```
-
----
-
 ## Penutup
 
 Website ini dibuat untuk membantu monitoring risiko rantai pasok global melalui integrasi berbagai API dan dashboard analitik. Dengan fitur country dashboard, weather map, currency risk, news intelligence, port dashboard, watchlist, dan risk score, pengguna dapat melihat gambaran risiko suatu negara secara lebih cepat dan terstruktur.
