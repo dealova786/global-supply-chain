@@ -1,59 +1,429 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Global Supply Chain Risk Intelligence Platform
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Global Supply Chain Risk Intelligence Platform adalah website monitoring risiko rantai pasok global berbasis multi-API dan analitik data. Aplikasi ini digunakan untuk memantau risiko suatu negara berdasarkan cuaca, indikator ekonomi, nilai tukar, berita, sentimen, pelabuhan, dan skor risiko total.
 
-## About Laravel
+## Fitur Utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Country Intelligence Dashboard** 
+  Menampilkan informasi negara, cuaca, ekonomi, currency, news intelligence, dan risk score.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- **Risk Score Dashboard**  
+  Menampilkan skor risiko negara berdasarkan weather risk, inflation risk, news risk, dan currency risk.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- **Weather Map**  
+  Menampilkan peta cuaca global menggunakan Leaflet.js.
 
-## Learning Laravel
+- **Currency Risk Dashboard**  
+  Menampilkan nilai tukar mata uang dan risiko kurs.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+- **News Intelligence**  
+  Menampilkan berita negara dan analisis sentimen berbasis positive words dan negative words.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+- **Port Dashboard**  
+  Menampilkan data pelabuhan berdasarkan negara.
 
-## Laravel Sponsors
+- **Country Comparison**  
+  Membandingkan dua negara berdasarkan indikator risiko.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+- **Watchlist**  
+  Menyimpan daftar negara yang ingin dipantau user.
 
-### Premium Partners
+- **Admin Dashboard**  
+  Admin dapat mengelola user, artikel, port, sentiment words, dan sinkronisasi API.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## Teknologi yang Digunakan
 
-## Contributing
+| Bagian | Teknologi |
+|---|---|
+| Backend | Laravel |
+| Database | MySQL |
+| Frontend | Bootstrap, JavaScript |
+| Chart | Chart.js |
+| Map | Leaflet.js |
+| Auth | Laravel Breeze |
+| API Negara | REST Countries API |
+| API Cuaca | Open-Meteo API |
+| API Ekonomi | World Bank API |
+| API Berita | GNews API |
+| API Pelabuhan | GeoNames API |
+| API Kurs | Currency API |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Kebutuhan Sistem
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Pastikan perangkat sudah memiliki:
 
-## Security Vulnerabilities
+- PHP 8.2 atau lebih baru
+- Composer
+- Node.js dan npm
+- MySQL
+- Git
+- XAMPP/Laragon atau server lokal sejenis
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+---
 
-## License
+## Cara Menjalankan Website
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 1. Masuk ke Folder Project
+
+```bash
+cd supply-chain-risk
+```
+
+Contoh:
+
+```bash
+cd C:\Users\Acer\supply-chain-risk
+```
+
+---
+
+### 2. Install Dependency
+
+Install dependency Laravel:
+
+```bash
+composer install
+```
+
+Install dependency frontend:
+
+```bash
+npm install
+npm run build
+```
+
+Jika ingin menjalankan frontend mode development:
+
+```bash
+npm run dev
+```
+
+---
+
+### 3. Buat File Environment
+
+Copy file `.env.example` menjadi `.env`:
+
+```bash
+copy .env.example .env
+```
+
+---
+
+### 4. Atur Konfigurasi `.env`
+
+Sesuaikan konfigurasi berikut pada file `.env`:
+
+```env
+APP_NAME="Supply Chain Risk"
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=supply_chain_risk
+DB_USERNAME=root
+DB_PASSWORD=
+
+CACHE_STORE=file
+SESSION_DRIVER=file
+QUEUE_CONNECTION=sync
+
+REST_COUNTRIES_BASE_URL=https://api.restcountries.com/countries/v5
+WORLD_BANK_BASE_URL=https://api.worldbank.org/v2
+
+GNEWS_API_KEY=your_gnews_api_key
+GNEWS_BASE_URL=https://gnews.io/api/v4
+
+GEONAMES_USERNAME=your_geonames_username
+GEONAMES_BASE_URL=https://secure.geonames.org
+```
+
+Catatan:  
+API key disimpan pada file `.env` dan tidak perlu dibagikan secara publik.
+
+---
+
+### 5. Buat Database
+
+Buat database MySQL dengan nama:
+
+```text
+supply_chain_risk
+```
+
+---
+
+### 6. Generate App Key
+
+```bash
+php artisan key:generate
+```
+
+---
+
+### 7. Jalankan Migration
+
+```bash
+php artisan migrate
+```
+
+---
+
+### 8. Jalankan Seeder
+
+Seeder digunakan untuk mengisi data awal, seperti positive words dan negative words.
+
+```bash
+php artisan db:seed
+```
+
+Atau jalankan seeder tertentu:
+
+```bash
+php artisan db:seed --class=PositiveWordSeeder
+php artisan db:seed --class=NegativeWordSeeder
+```
+
+---
+
+### 9. Buat Akun Admin
+
+Jalankan perintah berikut:
+
+```bash
+php artisan tinker --execute="App\Models\User::updateOrCreate(['email'=>'admin@gmail.com'], ['name'=>'Admin', 'password'=>Illuminate\Support\Facades\Hash::make('password123'), 'role'=>'admin', 'email_verified_at'=>now()]);"
+```
+
+Akun admin default:
+
+```text
+Email    : admin@gmail.com
+Password : password123
+```
+
+---
+
+### 10. Jalankan Website
+
+```bash
+php artisan serve
+```
+
+Buka di browser:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+## Alur Pengambilan Data API
+
+Aplikasi menggunakan beberapa API eksternal. Alur pengambilan data secara umum:
+
+```text
+User/Admin memilih negara
+        ↓
+Sistem memanggil service Laravel
+        ↓
+Service mengambil data dari API eksternal
+        ↓
+Data diproses dan dihitung nilai risikonya
+        ↓
+Data disimpan ke database sebagai cache
+        ↓
+Dashboard menampilkan hasil analisis
+```
+
+Data disimpan sebagai cache agar website tetap dapat menampilkan data terakhir meskipun API mengalami timeout, limit, atau koneksi gagal.
+
+---
+
+## Sinkronisasi dan Pengambilan Data
+
+Setelah login sebagai admin, lakukan beberapa proses berikut:
+
+### 1. Sync Countries API
+
+```text
+Admin Dashboard → Sync Countries API
+```
+
+Fitur ini mengambil data negara dari REST Countries API dan menyimpannya ke tabel `countries`.
+
+---
+
+### 2. Analyze Country Dashboard
+
+```text
+Country Dashboard → pilih negara → Analyze
+```
+
+Fitur ini mengambil dan menampilkan data:
+
+- cuaca dari Open-Meteo API
+- ekonomi dari World Bank API
+- currency
+- news intelligence
+- risk score
+
+---
+
+### 3. Analyze Currency
+
+```text
+Currency Dashboard → pilih negara → Analyze
+```
+
+Fitur ini mengambil data nilai tukar mata uang dan menghitung currency risk.
+
+---
+
+### 4. Analyze News
+
+```text
+News Intelligence → pilih negara → Analyze
+```
+
+Fitur ini mengambil berita dari GNews API dan melakukan analisis sentimen.
+
+Hasil analisis sentimen:
+
+| Sentiment | News Risk |
+|---|---|
+| Positive | 20 |
+| Neutral | 50 |
+| Negative | 60–80 |
+
+---
+
+### 5. Sync Ports API
+
+```text
+Admin → Manage Ports → pilih negara → Sync Ports API
+```
+
+Fitur ini mengambil data pelabuhan dari GeoNames API.
+
+---
+
+## Risk Score
+
+Risk score dihitung dari beberapa indikator:
+
+- Weather Risk
+- Inflation Risk
+- News Risk
+- Currency Risk
+
+Kategori risiko:
+
+| Risk Score | Kategori |
+|---|---|
+| 0–39 | Low |
+| 40–69 | Medium |
+| 70–100 | High |
+
+---
+
+## Tabel Database Utama
+
+| Tabel | Fungsi |
+|---|---|
+| users | Data user dan admin |
+| countries | Data negara |
+| weather_cache | Cache data cuaca |
+| economic_indicators | Data ekonomi |
+| currency_rates | Data nilai tukar |
+| news_cache | Data berita dan sentimen |
+| risk_scores | Skor risiko |
+| ports | Data pelabuhan |
+| articles | Data artikel |
+| positive_words | Kata positif |
+| negative_words | Kata negatif |
+| watchlists | Data watchlist user |
+
+---
+
+## Route Utama
+
+| Route | Fungsi |
+|---|---|
+| `/login` | Login |
+| `/register` | Register user |
+| `/dashboard` | Dashboard utama |
+| `/country-dashboard` | Country Intelligence Dashboard |
+| `/risk-scores` | Risk Score Dashboard |
+| `/weather-map` | Weather Map |
+| `/currency-dashboard` | Currency Dashboard |
+| `/news-intelligence` | News Intelligence |
+| `/ports` | Port Dashboard |
+| `/compare-countries` | Country Comparison |
+| `/watchlists` | Watchlist |
+| `/admin/users` | Admin Users |
+| `/admin/articles` | Admin Articles |
+| `/admin/ports` | Admin Manage Ports |
+| `/admin/sentiment-words` | Admin Sentiment Words |
+
+---
+
+## Perintah Artisan yang Sering Digunakan
+
+Membersihkan cache aplikasi:
+
+```bash
+php artisan optimize:clear
+```
+
+Membersihkan config cache:
+
+```bash
+php artisan config:clear
+```
+
+Membersihkan route cache:
+
+```bash
+php artisan route:clear
+```
+
+Menjalankan migration:
+
+```bash
+php artisan migrate
+```
+
+Menjalankan server lokal:
+
+```bash
+php artisan serve
+```
+
+---
+
+## Catatan Penting
+
+Jangan menjalankan perintah berikut kecuali benar-benar ingin menghapus seluruh data:
+
+```bash
+php artisan migrate:fresh
+```
+
+Perintah tersebut akan menghapus seluruh isi database, termasuk akun admin, data negara, data API cache, artikel, ports, sentiment words, dan watchlist.
+
+Jika hanya ingin menjalankan migration baru tanpa menghapus data lama, gunakan:
+
+```bash
+php artisan migrate
+```
+
+---
+
+## Penutup
+
+Website ini dibuat untuk membantu monitoring risiko rantai pasok global melalui integrasi berbagai API dan dashboard analitik. Dengan fitur country dashboard, weather map, currency risk, news intelligence, port dashboard, watchlist, dan risk score, pengguna dapat melihat gambaran risiko suatu negara secara lebih cepat dan terstruktur.
