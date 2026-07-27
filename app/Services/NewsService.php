@@ -15,16 +15,14 @@ class NewsService
 {
     public function getNewsByCountry(Country $country): array
     {
-        /*
-         * 1. Ambil dari cache dulu.
-         * Ini supaya dashboard tetap aman kalau quota GNews habis.
-         */
         $cache = NewsCache::where('country_id', $country->id)
             ->latest('published_at')
             ->limit(10)
             ->get();
 
         if ($cache->count() > 0) {
+            $cache = $this->refreshCachedNewsRisk($cache);
+
             return [
                 'success' => true,
                 'status' => true,
@@ -34,9 +32,6 @@ class NewsService
             ];
         }
 
-        /*
-         * 2. Kalau belum ada cache, baru ambil dari GNews API.
-         */
         $gnewsResult = $this->fetchFromGNews($country);
 
         if ($gnewsResult['status'] && $gnewsResult['data']->count() > 0) {
@@ -84,9 +79,9 @@ class NewsService
         try {
             $query = $country->name;
 
-            $response = Http::connectTimeout(5)
-                ->timeout(10)
-                ->retry(1, 500)
+            $response = Http::connectTimeout(15)
+                ->timeout(30)
+                ->retry(3, 1000)
                 ->get($baseUrl . '/search', [
                     'q' => $query,
                     'lang' => 'en',
@@ -218,6 +213,28 @@ class NewsService
         );
     }
 
+    private function refreshCachedNewsRisk(Collection $cache): Collection
+    {
+        return $cache->map(function ($news) {
+            if ((int) $news->news_risk > 0) {
+                return $news;
+            }
+
+            $sentiment = $news->sentiment ?? 'Neutral';
+
+            $newsRisk = $this->calculateNewsRiskFromSentiment(
+                $sentiment,
+                (int) ($news->positive_score ?? 0),
+                (int) ($news->negative_score ?? 0)
+            );
+
+            $news->news_risk = $newsRisk;
+            $news->save();
+
+            return $news;
+        });
+    }
+
     private function analyzeSentiment(string $text): array
     {
         $positiveWords = PositiveWord::pluck('word')
@@ -263,21 +280,40 @@ class NewsService
 
         if ($positiveScore > $negativeScore) {
             $sentiment = 'Positive';
-            $newsRisk = 20;
         } elseif ($negativeScore > $positiveScore) {
             $sentiment = 'Negative';
-            $newsRisk = $negativeScore >= 3 ? 80 : 60;
         } else {
             $sentiment = 'Neutral';
-            $newsRisk = 50;
         }
 
         return [
             'sentiment' => $sentiment,
             'positive_score' => $positiveScore,
             'negative_score' => $negativeScore,
-            'news_risk' => $newsRisk,
+            'news_risk' => $this->calculateNewsRiskFromSentiment($sentiment, $positiveScore, $negativeScore),
         ];
+    }
+
+    private function calculateNewsRiskFromSentiment(
+        ?string $sentiment,
+        int $positiveScore = 0,
+        int $negativeScore = 0
+    ): int {
+        $sentiment = strtolower($sentiment ?? 'neutral');
+
+        if ($sentiment === 'positive') {
+            return 20;
+        }
+
+        if ($sentiment === 'negative') {
+            if ($negativeScore >= 3) {
+                return 80;
+            }
+
+            return 60;
+        }
+
+        return 50;
     }
 
     private function normalizeWord(string $word): string

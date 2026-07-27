@@ -13,13 +13,20 @@ class NewsCache extends Model
         'title',
         'description',
         'content',
-        'url',
         'source',
+        'url',
         'published_at',
         'sentiment',
         'positive_score',
         'negative_score',
-        'neutral_score',
+        'news_risk',
+    ];
+
+    protected $casts = [
+        'published_at' => 'datetime',
+        'positive_score' => 'integer',
+        'negative_score' => 'integer',
+        'news_risk' => 'integer',
     ];
 
     public function country()
